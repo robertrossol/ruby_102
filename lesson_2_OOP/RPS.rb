@@ -1,3 +1,38 @@
+class Score
+  attr_accessor :value, :winner
+
+  @@winning_total = 5
+
+  def initialize
+    @value = 0
+    @winner = nil
+  end
+
+  def self.winning_total
+    @@winning_total
+  end
+
+  def self.winning_total=(value)
+    @@winning_total = value
+  end
+
+  def increment
+    @value += 1
+    @winner = true if @value == @@winning_total
+  end
+
+  def to_s
+    @value.to_s
+  end
+
+  # def display
+  #   puts "**** Scoreboard ****"
+  #   puts "* #{@player_1.name}: #{@player_1.score}".ljust(19) + "*"
+  #   puts "* #{@player_2.name}: #{@player_2.score}".ljust(19) + "*"
+  #   puts "*" * 20
+  # end
+end
+
 class Move
   VALUES = ['rock', 'paper', 'scissors']
 
@@ -35,11 +70,16 @@ class Move
 end
 
 class Player
-  attr_accessor :move, :name
+  attr_accessor :move, :name, :score
 
   def initialize
     set_name
+    @score = Score.new
   end
+
+  # def update_score
+  #   @score += 1
+  # end
 end
 
 class Human < Player
@@ -58,7 +98,7 @@ class Human < Player
     choice = nil
     loop do
       puts "Please choose rock, paper, or scissors:"
-      choice = gets.chomp
+      choice = gets.chomp.downcase
       break if Move::VALUES.include? choice
       puts "Sorry, invalid choice."
     end
@@ -82,6 +122,7 @@ class RPSGame
   def initialize
     @human = Human.new
     @computer = Computer.new
+    @winner = nil
   end
 
   def display_welcome_message
@@ -92,6 +133,14 @@ class RPSGame
     puts "Thanks for playing Rock, Paper, Scissors. Goodbye!"
   end
 
+  def determine_winning_score
+    puts "how many points would you like to play to?"
+    points = gets.chomp.to_i
+    points = 5 if points == 0
+    puts "Playing to #{points} points"
+    Score.winning_total = points
+  end
+
   def display_moves
     puts "#{human.name} chose #{human.move}."
     puts "#{computer.name} chose #{computer.move}."
@@ -100,11 +149,26 @@ class RPSGame
   def display_winner
     if human.move > computer.move
       puts "#{human.name} won!"
+      human.score.increment
     elsif human.move < computer.move
       puts "#{computer.name} won!"
+      computer.score.increment
     else
       puts "It's a tie!"
     end
+  end
+
+  def winner?
+    if human.score.winner || computer.score.winner
+      @winner = human.score.winner ? human : computer
+    end
+  end
+
+  def display_score
+    puts "**** Scoreboard ****"
+    puts "* #{human.name}: #{human.score}".ljust(19) + "*"
+    puts "* #{computer.name}: #{computer.score}".ljust(19) + "*"
+    puts "*" * 20
   end
 
   def play_again?
@@ -120,12 +184,17 @@ class RPSGame
 
   def play
     display_welcome_message
+    determine_winning_score
     loop do
       human.choose
       computer.choose
       display_moves
       display_winner
-      break unless play_again?
+      display_score
+      break if winner? || !play_again?
+    end
+    if winner?
+      puts "#{@winner.name} Wins!"
     end
     display_goodbye_message
   end
